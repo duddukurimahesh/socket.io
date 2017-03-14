@@ -20,9 +20,13 @@
 				color: green;
 				font-style: italic;
 			}
+			.userTitle{
+				color: purple;
+			}
 		</style>
 	</head>
 	<body>
+		<h2 id="userTitle" class="userTitle"></h2>
 		<div id="nickWrap">
 			<p>Enter user Name:</p>
 			<p id="nickError"></p>
@@ -31,6 +35,7 @@
 				<input type="submit"></input>
 			</form>
 		</div>
+		<!-- <div id="theDiv">where is the image...</div> -->
 		<div id="contentWrap">
 			<div id="chatWrap">
 				<div id="chat"></div>
@@ -44,6 +49,13 @@
 		<script src="http://code.jquery.com/jquery-latest.min.js" ></script>
 		<script src="/socket.io/socket.io.js" ></script>
 		<script type="text/javascript">
+
+			var preMsg = '';
+			function context(value){
+				preMsg = '/w '+value+' ';
+				//alert(preMsg);
+			};
+			var user = '';
 			jQuery(function($){
 
 				var socket       = io.connect();
@@ -57,10 +69,15 @@
 
 				$nickForm.submit(function(e){
 					e.preventDefault();
+					user = $nickBox.val();
 					socket.emit('new user',$nickBox.val(),function(data){
 						if(data){
+							$("#userTitle").html("user : "+user);
 							$('#nickWrap').hide();
 							$('#contentWrap').show();
+
+							
+
 						}else{
 							$nickError.html('That username is already taken.Try again!');
 						}
@@ -69,29 +86,37 @@
 				});
 
 				socket.on('usernames', function(data){
+					data.splice(data.indexOf(user), 1);
 					var html='';
 					for(i=0;i<data.length;i++){
-						html += data[i]+'<br/>';
+						html += '<input type="radio" name="context" value="'+data[i]+'" onclick="context(value)"> '+data[i]+'<br>';
 					}
 					$users.html(html);
 				});
 
-
 				$messageForm.submit(function(e){
 					e.preventDefault();
-					socket.emit('send message',$messageBox.val(),function(data){
+					socket.emit('send message',preMsg+$messageBox.val(),function(data){
 						$chat.append('<span class="error">' + data + "</span><br/>");
 					});
 					$messageBox.val('');
 				});
 
-				socket.on('new message', function(data){
+				/*socket.on('new message', function(data){
 					console.log('data is ---',data);
 					$chat.append('<span class="msg"><b>' + data.nick + ": </b>" +  data.msg + "</span><br/>");
-				});
+				});*/
 				socket.on('whisper', function(data){
 					$chat.append('<span class="whisper"><b>' + data.nick + ": </b>" +  data.msg + "</span><br/>");
 				});
+
+				/*socket.on("image", function(info) {
+					console.log("---- here image is -----------------",info);
+				    if (info.image) {
+				       var src = 'data:image/jpeg;base64,' + info.buffer;
+				       $('#theDiv').prepend('<img id="theImg" src='+src+ '/>')
+				    }
+				});*/
 				
 			});
 		</script>
